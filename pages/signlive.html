@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Live Sign to Text</title>
+  <style>
+    body { text-align: center; font-family: Arial; background-color: #f9f9f9; }
+    video { border: 2px solid #333; margin-top: 20px; }
+    #prediction { font-size: 24px; color: green; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Live Sign to Sentence Converter</h1>
+  <video id="webcam" width="640" height="480" autoplay></video>
+  <p id="prediction">Prediction: <span id="word">...</span></p>
+
+  <script>
+    const video = document.getElementById('webcam');
+    const wordSpan = document.getElementById('word');
+
+    async function startWebcam() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+    }
+
+    startWebcam();
+
+    setInterval(async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      canvas.getContext('2d').drawImage(video, 0, 0, 640, 480);
+
+      const base64Image = canvas.toDataURL('image/jpeg');
+
+      const res = await fetch('http://127.0.0.1:5000/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64Image })
+      });
+
+      const data = await res.json();
+      wordSpan.textContent = data.corrected || data.prediction;
+    }, 2000); // every 2 seconds
+  </script>
+</body>
+</html>
